@@ -66,6 +66,7 @@ class BranchPredictor(SimObject):
     BTBEntries = Param.Unsigned(4096, "Number of BTB entries")
     BTBTagSize = Param.Unsigned(16, "Size of the BTB tags, in bits")
     RASSize = Param.Unsigned(16, "RAS size")
+    # 32 bit computer = 4 byte instructions
     instShiftAmt = Param.Unsigned(2, "Number of bits to shift instructions by")
 
     indirectBranchPred = Param.IndirectPredictor(
@@ -82,6 +83,14 @@ class LocalBP(BranchPredictor):
     localPredictorSize = Param.Unsigned(2048, "Size of local predictor")
     localCtrBits = Param.Unsigned(2, "Bits per counter")
 
+class CorrelatingBP(BranchPredictor):
+    type = "CorrelatingBP"
+    cxx_class = "gem5::branch_prediction::CorrelatingBP"
+    cxx_header = "cpu/pred/2bit_correlating.hh"
+
+    localPredictorSize = Param.Unsigned(2048, "Size of local predictor")
+    localCtrBits = Param.Unsigned(2, "Bits per counter")
+    globalHistoryBits = Param.Unsigned(2, "Number of last branches used")
 
 class TournamentBP(BranchPredictor):
     type = "TournamentBP"
