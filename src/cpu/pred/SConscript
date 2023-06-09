@@ -41,12 +41,13 @@ SimObject('BranchPredictor.py', sim_objects=[
     'MultiperspectivePerceptronTAGE', 'MPP_StatisticalCorrector_64KB',
     'MultiperspectivePerceptronTAGE64KB', 'MPP_TAGE_8KB',
     'MPP_LoopPredictor_8KB', 'MPP_StatisticalCorrector_8KB',
-    'MultiperspectivePerceptronTAGE8KB', 'CorrelatingBP'])
+    'MultiperspectivePerceptronTAGE8KB', 'CorrelatingBP', 'PerceptronBP'])
 
 DebugFlag('Indirect')
 Source('bpred_unit.cc')
 Source('2bit_local.cc')
 Source('2bit_correlating.cc')
+Source('perceptron.cc')
 Source('btb.cc')
 Source('simple_indirect.cc')
 Source('indirect.cc')

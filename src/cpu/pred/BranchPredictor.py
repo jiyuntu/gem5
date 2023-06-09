@@ -92,6 +92,15 @@ class CorrelatingBP(BranchPredictor):
     localCtrBits = Param.Unsigned(2, "Bits per counter")
     globalHistoryBits = Param.Unsigned(2, "Number of last branches used")
 
+class PerceptronBP(BranchPredictor):
+    type = "PerceptronBP"
+    cxx_class = "gem5::branch_prediction::PerceptronBP"
+    cxx_header = "cpu/pred/perceptron.hh"
+
+    localPredictorSize = Param.Unsigned(2048, "Size of local predictor")
+    localCtrBits = Param.Unsigned(8, "Bits per weight")
+    globalHistoryBits = Param.Unsigned(2, "Number of last branches used")
+
 class TournamentBP(BranchPredictor):
     type = "TournamentBP"
     cxx_class = "gem5::branch_prediction::TournamentBP"
