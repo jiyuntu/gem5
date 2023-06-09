@@ -48,8 +48,7 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams &params)
       localPredictorSets(localPredictorSize / localCtrBits / localWeightSize),
       localCtrs(localPredictorSets, std::vector<SatCounter8>(localWeightSize, SatCounter8(localCtrBits))),
       globalHistory(params.numThreads, 0),
-      indexMask(localPredictorSets - 1),
-      theta(params.theta, (int)(1.93 * globalHistoryBits + 14))
+      indexMask(localPredictorSets - 1)
 {
     if (!isPowerOf2(localPredictorSize)) {
         fatal("Invalid local predictor size!\n");
@@ -59,7 +58,8 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams &params)
         fatal("Invalid number of local predictor sets! Check localCtrBits.\n");
     }
 
-    globalHistoryMask = globalHistorySize - 1;
+    globalHistoryMask = (1U << globalHistoryBits) - 1;
+    theta = (int)(1.93 * globalHistoryBits + 14);
 
     DPRINTF(Fetch, "index mask: %#x\n", indexMask);
 
@@ -93,7 +93,7 @@ PerceptronBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
 
     DPRINTF(Fetch, "Looking up global history %#x\n", global_history_idx);
 
-    vector<SatCounter8> weights = localCtrs[local_predictor_idx];
+    std::vector<SatCounter8> weights = localCtrs[local_predictor_idx];
 
     taken = getPrediction(global_history_idx, weights);
 
@@ -136,7 +136,7 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
 
     DPRINTF(Fetch, "Looking up global history %#x\n", global_history_idx);
 
-    vector<SatCounter8>& weights = localCtrs[local_predictor_idx];
+    std::vector<SatCounter8>& weights = localCtrs[local_predictor_idx];
 
     int32_t y = 0; // overflow?
     int32_t x = 1;
@@ -167,7 +167,7 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
 
 inline
 bool
-PerceptronBP::getPrediction(unsigned global_history, vector<SatCounter8> weights)
+PerceptronBP::getPrediction(unsigned global_history, std::vector<SatCounter8> weights)
 {
     int32_t y = 0; // overflow?
     int32_t x = 1;
