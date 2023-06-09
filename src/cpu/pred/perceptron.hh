@@ -107,7 +107,7 @@ class PerceptronBP : public BPredUnit
      *  @param count The value of the counter.
      *  @return The prediction based on the counter value.
      */
-    inline bool getPrediction(unsigned global_history, std::vector<SatCounter8> weights);
+    inline bool getPrediction(unsigned global_history, std::vector<short> weights);
 
     /** Calculates the local index based on the PC. */
     inline unsigned getLocalIndex(Addr &PC);
@@ -134,7 +134,7 @@ class PerceptronBP : public BPredUnit
     const unsigned localPredictorSets;
 
     /** Array of counters that make up the local predictor. */
-    std::vector<std::vector<SatCounter8>> localCtrs;
+    std::vector<std::vector<short>> localCtrs;
 
     /** Global history register. Contains as much history as specified by
      *  globalHistoryBits. Actual number of bits used is determined by
@@ -148,7 +148,7 @@ class PerceptronBP : public BPredUnit
     /** Mask to get index bits. */
     const unsigned indexMask;
 
-    const uint32_t theta;
+    unsigned theta;
 };
 
 } // namespace branch_prediction

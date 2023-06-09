@@ -42,11 +42,11 @@ namespace branch_prediction
 PerceptronBP::PerceptronBP(const PerceptronBPParams &params)
     : BPredUnit(params),
       localPredictorSize(params.localPredictorSize),
-      localCtrBits(params.localCtrBits),
+      localCtrBits(16),
       globalHistoryBits(params.globalHistoryBits),
       localWeightSize(globalHistoryBits + 1),
       localPredictorSets(localPredictorSize / localCtrBits / localWeightSize),
-      localCtrs(localPredictorSets, std::vector<SatCounter8>(localWeightSize, SatCounter8(localCtrBits))),
+      localCtrs(localPredictorSets, std::vector<short>(localWeightSize, 0)),
       globalHistory(params.numThreads, 0),
       indexMask(localPredictorSets - 1)
 {
@@ -93,7 +93,7 @@ PerceptronBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
 
     DPRINTF(Fetch, "Looking up global history %#x\n", global_history_idx);
 
-    std::vector<SatCounter8> weights = localCtrs[local_predictor_idx];
+    std::vector<short> weights = localCtrs[local_predictor_idx];
 
     taken = getPrediction(global_history_idx, weights);
 
@@ -136,19 +136,19 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
 
     DPRINTF(Fetch, "Looking up global history %#x\n", global_history_idx);
 
-    std::vector<SatCounter8>& weights = localCtrs[local_predictor_idx];
+    std::vector<short>& weights = localCtrs[local_predictor_idx];
 
-    int32_t y = 0; // overflow?
-    int32_t x = 1;
+    int y = 0;
+    int x = 1;
     for(int i = 0; i < weights.size(); i++){
-        y += weights[0] * x;
+        y += weights[i] * x;
         x = (global_history_idx & 1) == 0 ? -1 : 1;
         global_history_idx >>= 1;
     }
 
     if ((y >= 0) != taken || abs(y) <= theta) {
         x = 1;
-        int32_t t = taken ? 1 : -1;
+        int t = taken ? 1 : -1;
         global_history_idx = globalHistory[tid] & globalHistoryMask;
         for(int i = 0; i < weights.size(); i++){
             weights[i] += t * x;
@@ -167,12 +167,12 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
 
 inline
 bool
-PerceptronBP::getPrediction(unsigned global_history, std::vector<SatCounter8> weights)
+PerceptronBP::getPrediction(unsigned global_history, std::vector<short> weights)
 {
-    int32_t y = 0; // overflow?
-    int32_t x = 1;
+    int y = 0;
+    int x = 1;
     for(int i = 0; i < weights.size(); i++){
-        y += weights[0] * x;
+        y += weights[i] * x;
         x = (global_history & 1) == 0 ? -1 : 1;
         global_history >>= 1;
     }
