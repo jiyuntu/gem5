@@ -75,8 +75,7 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams &params)
 void
 PerceptronBP::btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history)
 {
-// Place holder for a function that is called to update predictor history when
-// a BTB entry is invalid or not found.
+    globalHistory[tid] &= (globalHistoryMask & ~1ULL);
 }
 
 
@@ -96,6 +95,11 @@ PerceptronBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
     std::vector<char> weights = localCtrs[local_predictor_idx];
 
     taken = getPrediction(global_history_idx, weights);
+
+    BPHistory *history = new BPHistory;
+    history->globalHistory   = globalHistory[tid];
+    history->globalPredTaken = taken;
+    bp_history = static_cast<void*>(history);
 
     return taken;
 }
@@ -121,17 +125,19 @@ char PerceptronBP::saturatedUpdate(char weight, bool inc) {
 }
 
 void
+PerceptronBP::squash(ThreadID tid, void *bp_history)
+{
+    BPHistory *history = static_cast<BPHistory*>(bp_history);
+    globalHistory[tid] = history->globalHistory;
+    delete history;
+}
+
+void
 PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
                 bool squashed, const StaticInstPtr & inst, Addr corrTarget)
 {
-    assert(bp_history == NULL);
+    assert(bp_history);
     unsigned local_predictor_idx;
-
-    // No state to restore, and we do not update on the wrong
-    // path.
-    if (squashed) {
-        return;
-    }
 
     // Update the local predictor.
     local_predictor_idx = getLocalIndex(branch_addr);
@@ -152,7 +158,7 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
         global_history_idx >>= 1;
     }
 
-    if ((y >= 0) != taken || abs(y) <= theta) {
+    if (squashed || abs(y) <= theta) {
         x = 1;
         int t = taken ? 1 : -1;
         global_history_idx = globalHistory[tid] & globalHistoryMask;
@@ -195,6 +201,12 @@ PerceptronBP::getLocalIndex(Addr &branch_addr)
 void
 PerceptronBP::uncondBranch(ThreadID tid, Addr pc, void *&bp_history)
 {
+    BPHistory *history = new BPHistory;
+    history->globalHistory = globalHistory[tid];
+    history->globalPredTaken = true;
+    history->globalUsed = true;
+    bp_history = static_cast<void*>(history);
+    updateGlobalHistTaken(tid);
 }
 
 } // namespace branch_prediction

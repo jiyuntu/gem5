@@ -97,8 +97,7 @@ class PerceptronBP : public BPredUnit
     void update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
                 bool squashed, const StaticInstPtr & inst, Addr corrTarget);
 
-    void squash(ThreadID tid, void *bp_history)
-    { assert(bp_history == NULL); }
+    void squash(ThreadID tid, void *bp_history);
 
   private:
     /**
@@ -152,6 +151,12 @@ class PerceptronBP : public BPredUnit
     const unsigned indexMask;
 
     unsigned theta;
+
+    struct BPHistory {
+      unsigned globalHistory;
+	    bool globalPredTaken;
+	    bool globalUsed;
+    };
 };
 
 } // namespace branch_prediction
