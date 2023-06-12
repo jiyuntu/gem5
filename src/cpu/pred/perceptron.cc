@@ -42,11 +42,11 @@ namespace branch_prediction
 PerceptronBP::PerceptronBP(const PerceptronBPParams &params)
     : BPredUnit(params),
       localPredictorSize(params.localPredictorSize),
-      localCtrBits(16),
+      localCtrBits(8),
       globalHistoryBits(params.globalHistoryBits),
       localWeightSize(globalHistoryBits + 1),
       localPredictorSets(localPredictorSize / localCtrBits / localWeightSize),
-      localCtrs(localPredictorSets, std::vector<short>(localWeightSize, 0)),
+      localCtrs(localPredictorSets, std::vector<char>(localWeightSize, 0)),
       globalHistory(params.numThreads, 0),
       indexMask(localPredictorSets - 1)
 {
@@ -58,7 +58,7 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams &params)
         fatal("Invalid number of local predictor sets! Check localCtrBits.\n");
     }
 
-    globalHistoryMask = (1U << globalHistoryBits) - 1;
+    globalHistoryMask = (1ULL << globalHistoryBits) - 1ULL;
     theta = (int)(1.93 * globalHistoryBits + 14);
 
     DPRINTF(Fetch, "index mask: %#x\n", indexMask);
@@ -89,11 +89,11 @@ PerceptronBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
     DPRINTF(Fetch, "Looking up index %#x\n",
             local_predictor_idx);
 
-    unsigned global_history_idx = globalHistory[tid] & globalHistoryMask;
+    unsigned long long global_history_idx = globalHistory[tid] & globalHistoryMask;
 
     DPRINTF(Fetch, "Looking up global history %#x\n", global_history_idx);
 
-    std::vector<short> weights = localCtrs[local_predictor_idx];
+    std::vector<char> weights = localCtrs[local_predictor_idx];
 
     taken = getPrediction(global_history_idx, weights);
 
@@ -114,6 +114,12 @@ PerceptronBP::updateGlobalHistNotTaken(ThreadID tid)
     globalHistory[tid] = (globalHistory[tid] << 1);
 }
 
+char PerceptronBP::saturatedUpdate(char weight, bool inc) {
+    if ( inc && (weight < SCHAR_MAX)) return weight + 1;
+    else if (!inc && (weight > SCHAR_MIN)) return weight - 1;
+    return weight;
+}
+
 void
 PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
                 bool squashed, const StaticInstPtr & inst, Addr corrTarget)
@@ -132,11 +138,11 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
 
     DPRINTF(Fetch, "Looking up index %#x\n", local_predictor_idx);
 
-    unsigned global_history_idx = globalHistory[tid] & globalHistoryMask;
+    unsigned long long global_history_idx = globalHistory[tid] & globalHistoryMask;
 
     DPRINTF(Fetch, "Looking up global history %#x\n", global_history_idx);
 
-    std::vector<short>& weights = localCtrs[local_predictor_idx];
+    std::vector<char>& weights = localCtrs[local_predictor_idx];
 
     int y = 0;
     int x = 1;
@@ -151,7 +157,7 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
         int t = taken ? 1 : -1;
         global_history_idx = globalHistory[tid] & globalHistoryMask;
         for(int i = 0; i < weights.size(); i++){
-            weights[i] += t * x;
+            weights[i] = saturatedUpdate(weights[i], t * x > 0);
             x = (global_history_idx & 1) == 0 ? -1 : 1;
             global_history_idx >>= 1;
         }
@@ -167,7 +173,7 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
 
 inline
 bool
-PerceptronBP::getPrediction(unsigned global_history, std::vector<short> weights)
+PerceptronBP::getPrediction(unsigned long long global_history, std::vector<char> weights)
 {
     int y = 0;
     int x = 1;

@@ -107,7 +107,7 @@ class PerceptronBP : public BPredUnit
      *  @param count The value of the counter.
      *  @return The prediction based on the counter value.
      */
-    inline bool getPrediction(unsigned global_history, std::vector<short> weights);
+    inline bool getPrediction(unsigned long long global_history, std::vector<char> weights);
 
     /** Calculates the local index based on the PC. */
     inline unsigned getLocalIndex(Addr &PC);
@@ -117,6 +117,9 @@ class PerceptronBP : public BPredUnit
 
     /** Updates global history as not taken. */
     inline void updateGlobalHistNotTaken(ThreadID tid);
+
+    /** Updates weights. */
+    char saturatedUpdate(char weight, bool inc);
 
     /** Size of the local predictor. */
     const unsigned localPredictorSize;
@@ -134,16 +137,16 @@ class PerceptronBP : public BPredUnit
     const unsigned localPredictorSets;
 
     /** Array of counters that make up the local predictor. */
-    std::vector<std::vector<short>> localCtrs;
+    std::vector<std::vector<char>> localCtrs;
 
     /** Global history register. Contains as much history as specified by
      *  globalHistoryBits. Actual number of bits used is determined by
      *  globalHistoryMask and choiceHistoryMask. */
-    std::vector<unsigned> globalHistory;
+    std::vector<unsigned long long> globalHistory;
 
     /** Mask to apply to globalHistory to access global history table.
      *  Based on globalPredictorSize.*/
-    unsigned globalHistoryMask;
+    unsigned long long globalHistoryMask;
 
     /** Mask to get index bits. */
     const unsigned indexMask;

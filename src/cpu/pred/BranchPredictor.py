@@ -97,8 +97,8 @@ class PerceptronBP(BranchPredictor):
     cxx_class = "gem5::branch_prediction::PerceptronBP"
     cxx_header = "cpu/pred/perceptron.hh"
 
-    localPredictorSize = Param.Unsigned(2048, "Size of local predictor")
-    globalHistoryBits = Param.Unsigned(7, "Number of last branches used")
+    localPredictorSize = Param.Unsigned(65536, "Size of local predictor")
+    globalHistoryBits = Param.Unsigned(63, "Number of last branches used")
 
 class TournamentBP(BranchPredictor):
     type = "TournamentBP"
