@@ -101,6 +101,14 @@ PerceptronBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
     history->globalPredTaken = taken;
     bp_history = static_cast<void*>(history);
 
+    if (taken) {
+        DPRINTF(Fetch, "Branch speculatively updated as taken.\n");
+        updateGlobalHistTaken(tid);
+    } else {
+        DPRINTF(Fetch, "Branch speculatively updated as not taken.\n");
+        updateGlobalHistNotTaken(tid);
+    }
+
     return taken;
 }
 
@@ -168,12 +176,15 @@ PerceptronBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_histor
             global_history_idx >>= 1;
         }
     }
-    if (taken) {
-        DPRINTF(Fetch, "Branch updated as taken.\n");
-        updateGlobalHistTaken(tid);
-    } else {
-        DPRINTF(Fetch, "Branch updated as not taken.\n");
-        updateGlobalHistNotTaken(tid);
+    if (squashed)
+    {
+        if (taken) {
+            DPRINTF(Fetch, "Branch updated as taken.\n");
+            updateGlobalHistTaken(tid);
+        } else {
+            DPRINTF(Fetch, "Branch updated as not taken.\n");
+            updateGlobalHistNotTaken(tid);
+        }
     }
 }
 
